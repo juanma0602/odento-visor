@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Odento - Visor Clínico Premium</title>
+    <title>Odontograma Odento</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* Variables Globales */
+        /* Variables Globales y Nueva Paleta Clínica */
         :root {
             --bg-body: #0f172a;
             --bg-card: #ffffff;
@@ -23,6 +23,13 @@
             --resina-color: #2563eb; 
             --caries-color: #dc2626; 
             --ausente-color: #334155;
+            /* Nuevas Variables Fase 2 */
+            --extraer-color: #ef4444;
+            --endo-color: #0284c7;
+            --implante-color: #f97316;
+            --corona-color: #3b82f6;
+            --bracket-color: #94a3b8;
+            
             --accent: #3b82f6;
             --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             --shadow-tooth: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -43,23 +50,27 @@
             background-size: 24px 24px;
             color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 0; /* Padding removido para layout fijo */
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            align-items: center; /* Centrar tarjeta en desktop */
+            height: 100vh; /* Alto fijo a la pantalla */
+            overflow: hidden; /* Desactiva el scroll general de la pagina */
         }
 
-        /* Tarjeta Principal */
+        /* Tarjeta Principal - Layout Fijo */
         .card {
             background: var(--bg-card);
-            border-radius: 32px;
+            border-radius: 0; /* Recto en móviles */
             box-shadow: var(--shadow-card);
-            padding: 40px;
             width: 100%;
             max-width: 1000px;
+            height: 100vh; /* Ocupa el 100% del alto */
+            max-height: 100vh;
             position: relative;
-            overflow: hidden;
+            overflow: hidden; /* Oculta lo que se sale del contenedor general */
+            display: flex;
+            flex-direction: column; /* Apila elementos verticalmente */
             animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -95,10 +106,11 @@
             100% { transform: rotate(360deg); } 
         }
 
-        /* Cabecera */
+        /* Cabecera (Fija) */
         .header { 
             text-align: center; 
-            margin-bottom: 40px; 
+            padding: 20px 20px 10px 20px;
+            flex-shrink: 0; /* Evita que se achique */
         }
         
         .header h2 { 
@@ -118,23 +130,25 @@
             font-weight: 500; 
         }
 
-        /* Leyenda de Colores */
+        /* Leyenda de Colores (Fija) */
         .leyenda {
             display: flex;
             justify-content: center;
-            gap: 24px;
-            margin-bottom: 40px;
+            gap: 12px;
+            flex-wrap: wrap; /* Para que baje de linea si son muchos */
+            margin: 0 20px 20px 20px;
             padding: 15px;
             background: #f8fafc;
             border-radius: 16px;
             border: 1px solid #f1f5f9;
+            flex-shrink: 0; /* Evita que se achique */
         }
         
         .leyenda-item { 
             display: flex; 
             align-items: center; 
-            gap: 8px; 
-            font-size: 13px; 
+            gap: 6px; 
+            font-size: 12px; 
             font-weight: 600; 
             color: #475569; 
         }
@@ -145,13 +159,19 @@
             border-radius: 5px; 
             border: 1px solid rgba(0,0,0,0.1); 
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
 
-        /* Contenedor del Odontograma con Scroll Horizontal */
+        /* Contenedor del Odontograma con Scroll Inteligente */
         .odontograma-viewport {
+            flex: 1; /* Ocupa todo el alto restante de la tarjeta */
             width: 100%;
-            overflow-x: auto;
-            padding: 20px 5px 40px 5px; /* Extra padding abajo para mobile */
+            overflow-y: auto; /* Scroll vertical exclusivo para el grafico */
+            overflow-x: auto; /* Scroll horizontal exclusivo para el grafico */
+            padding: 10px 20px 60px 20px;
             cursor: grab;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
@@ -168,8 +188,8 @@
             text-align: center;
             font-size: 12px;
             color: var(--text-muted);
-            margin-top: -15px;
-            margin-bottom: 20px;
+            padding-bottom: 10px;
+            flex-shrink: 0;
             animation: pulse 2s infinite;
         }
 
@@ -254,7 +274,7 @@
             background: var(--sano-color);
             border: 2px solid var(--sano-border);
             border-radius: 8px;
-            overflow: hidden;
+            overflow: hidden; /* Mantiene las caras adentro */
             box-shadow: var(--shadow-tooth);
             transition: border-color 0.3s;
         }
@@ -279,7 +299,7 @@
         .surface.D { top: 0; right: 0; width: 26%; height: 100%; clip-path: polygon(0 25%, 100% 0, 100% 100%, 0 75%); }
         .surface.O { top: 26%; left: 26%; width: 48%; height: 48%; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
 
-        /* Estados Clínicos */
+        /* Estados Clínicos de Fase 1 */
         .surface.resina { background-color: var(--resina-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
         .surface.caries { background-color: var(--caries-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
         
@@ -297,6 +317,82 @@
             color: rgba(255,255,255,0.8);
             font-size: 32px; 
             font-weight: 200;
+        }
+
+        /* =========================================================
+           NUEVOS ESTADOS CLÍNICOS (FASE 2)
+           ========================================================= */
+
+        /* 1. Extracción Indicada (X) */
+        .tooth.extraer {
+            border-color: var(--extraer-color);
+        }
+        .tooth.extraer::before, .tooth.extraer::after {
+            content: '';
+            position: absolute;
+            width: 140%;
+            height: 3px;
+            background: var(--extraer-color);
+            top: 50%;
+            left: -20%;
+            z-index: 20; /* Por encima de todo */
+        }
+        .tooth.extraer::before { transform: rotate(45deg); }
+        .tooth.extraer::after { transform: rotate(-45deg); }
+
+        /* 2. Endodoncia (E) */
+        .tooth.endo::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: var(--endo-color);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 15;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            border: 2px solid #fff;
+        }
+
+        /* 3. Implante (I) */
+        .tooth.implante {
+            background-color: #f1f5f9;
+            border: 2px dashed var(--implante-color);
+        }
+        .tooth.implante::before {
+            content: '🔩';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            z-index: 10;
+        }
+        /* Para que no se pise el ausente con el implante */
+        .tooth.implante.ausente::after { content: ''; display: none; }
+
+        /* 4. Corona (CO) */
+        .tooth.corona {
+            border: 4px solid var(--corona-color);
+            border-radius: 12px;
+        }
+
+        /* 5. Bracket (B) - Va solo en la cara Vestibular */
+        .surface.V.bracket::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 6px;
+            background: var(--bracket-color);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 1px;
+            border: 1px solid #475569;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            z-index: 10;
         }
 
         /* Tooltip Flotante (Solo para Desktop) */
@@ -380,27 +476,25 @@
             line-height: 1.6;
         }
 
+        /* Adaptación a Desktop (Pantallas Grandes) */
+        @media (min-width: 801px) {
+            body { 
+                padding: 20px; /* Restaura padding para no pegar la tarjeta a los bordes */
+            }
+            .card { 
+                height: calc(100vh - 40px); /* Resta el padding para no crear scroll en el body */
+                border-radius: 32px; 
+            }
+        }
+
         /* Adaptación a Dispositivos Móviles / Pantallas Chicas */
         @media (max-width: 800px) {
-            body { 
-                padding: 0; /* Telegram Mini Apps usan toda la pantalla */
-                background: var(--bg-card); /* Fondo sólido en móvil */
-            }
-            
-            .card { 
-                padding: 25px 15px; 
-                border-radius: 0; 
-                box-shadow: none;
-                border: none;
-            }
-            
             .header h2 { 
                 font-size: 24px; 
             }
             
             .leyenda { 
-                flex-wrap: wrap; 
-                gap: 12px; 
+                gap: 8px; 
                 padding: 10px;
             }
             
@@ -425,10 +519,6 @@
             .tooth-wrapper:active {
                 transform: scale(0.95);
             }
-            
-            .odontograma-viewport {
-                padding-bottom: 20px;
-            }
         }
 
         /* Desktop Hover (Solo si el dispositivo soporta mouse) */
@@ -450,21 +540,26 @@
     </div>
 
     <div class="header">
-        <h2>Visor Odento Premium</h2>
+        <h2>Odontograma Odento</h2>
         <p>Paciente: <strong id="nombre-paciente" style="color:#0f172a">...</strong></p>
     </div>
 
     <div class="leyenda">
         <div class="leyenda-item"><div class="color-box" style="background: #fff;"></div> Sano</div>
         <div class="leyenda-item"><div class="color-box" style="background: var(--resina-color);"></div> Resina</div>
-        <div class="leyenda-item"><div class="color-box" style="background: var(--caries-color);"></div> Caries</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--caries-color);"></div> Caries/Filtrado</div>
         <div class="leyenda-item"><div class="color-box" style="background: var(--ausente-color);"></div> Ausente</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--extraer-color); color: white; font-weight: bold; font-size: 14px;">×</div> Extraer</div>
+        <div class="leyenda-item"><div class="color-box" style="background: #fff; border: 2px solid var(--corona-color);"></div> Corona</div>
+        <div class="leyenda-item"><div class="color-box" style="background: #fff;"><div style="width: 8px; height: 8px; background: var(--endo-color); border-radius: 50%;"></div></div> Endodoncia</div>
+        <div class="leyenda-item"><div class="color-box" style="background: #f1f5f9; border: 1px dashed var(--implante-color); font-size: 10px;">🔩</div> Implante</div>
+        <div class="leyenda-item"><div class="color-box" style="background: #fff;"><div style="width: 8px; height: 4px; background: var(--bracket-color); border-radius: 1px;"></div></div> Bracket</div>
     </div>
 
     <div class="swipe-hint">👈 Desliza para explorar la boca 👉</div>
 
     <div class="odontograma-viewport" id="viewport">
-        <div id="odontograma-container">
+        <div id="odontograma-container" style="display: none;">
             <div class="seccion-titulo">Dentición Permanente</div>
             <div class="fila">
                 <div class="cuadrante" id="q1"></div>
@@ -551,7 +646,7 @@
     // Cerrar al deslizar hacia abajo el sheet (simulación básica)
     bottomSheet.addEventListener('swipedown', closeBottomSheet);
 
-    // Constructor de Dientes
+    // Constructor de Dientes (Motor Principal Actualizado)
     function construirDiente(num, config, dbDatos) {
         const wrapper = document.createElement('div');
         wrapper.className = 'tooth-wrapper';
@@ -566,19 +661,37 @@
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
         
-        let textoEstado = "Estado: Sano";
-        let textoHtmlTooltip = `<strong>Pieza ${num}</strong><br>Estado: Sano`;
+        let hallazgos = [];
+        let textoHtmlTooltip = '';
 
         const datos = dbDatos[num] || {};
+        const estadoTotal = datos.total || '';
         
-        // Lógica de Extracción o Ausencia
-        if (datos.total === "A" || datos.O === "A" || datos.total === "X") {
+        // 1. EVALUAR ESTADOS DE BASE (Afectan la estructura primaria del diente)
+        if (estadoTotal === "A" || datos.O === "A") {
             tooth.classList.add('ausente');
-            textoEstado = "Ausente / Extracción";
-            textoHtmlTooltip = `<strong>Pieza ${num}</strong><br>${textoEstado}`;
-        } else {
-            // Lógica de Caries y Resinas por cara
-            let hallazgos = [];
+            hallazgos.push("Ausente");
+        } else if (estadoTotal === "I") {
+            tooth.classList.add('implante');
+            hallazgos.push("Implante");
+        }
+
+        // 2. EVALUAR MODIFICADORES GLOBALES
+        if (estadoTotal === "X") {
+            tooth.classList.add('extraer');
+            hallazgos.push("Extracción Indicada");
+        }
+        if (estadoTotal === "CO") {
+            tooth.classList.add('corona');
+            hallazgos.push("Corona");
+        }
+        if (estadoTotal === "E") {
+            tooth.classList.add('endo');
+            hallazgos.push("Endodoncia");
+        }
+
+        // 3. EVALUAR SUPERFICIES INDIVIDUALES (Si el diente no está ausente)
+        if (!tooth.classList.contains('ausente')) {
             ['V', 'M', 'O', 'D', 'P'].forEach(cara => {
                 const divCara = document.createElement('div');
                 const estado = datos[cara];
@@ -588,20 +701,31 @@
                     clase = 'resina'; 
                     hallazgos.push(`Resina en cara ${cara}`); 
                 }
-                if (estado === 'F' || estado === 'caries') { 
+                if (estado === 'F' || estado === 'C' || estado === 'caries') { 
                     clase = 'caries'; 
-                    hallazgos.push(`Caries en cara ${cara}`); 
+                    hallazgos.push(`Caries/Filtrado en cara ${cara}`); 
+                }
+                // Detección de Brackets (Normalmente en cara Vestibular)
+                if (estado === 'B' || estado === 'bracket') {
+                    clase = 'bracket';
+                    hallazgos.push(`Bracket en cara ${cara}`);
+                }
+                // Si mandan la E en la cara Oclusal por error de mapeo, lo atajamos:
+                if (estado === 'E' && cara === 'O') {
+                    if (!tooth.classList.contains('endo')) {
+                        tooth.classList.add('endo');
+                        hallazgos.push(`Endodoncia`);
+                    }
                 }
                 
                 divCara.className = `surface ${cara} ${clase}`;
                 tooth.appendChild(divCara);
             });
-            
-            if (hallazgos.length > 0) {
-                textoEstado = hallazgos.join('<br>');
-                textoHtmlTooltip = `<strong>Pieza ${num}</strong><br>${hallazgos.join(', ')}`;
-            }
         }
+        
+        // 4. GENERAR TEXTOS PARA EL USUARIO
+        let textoEstado = hallazgos.length > 0 ? hallazgos.join('<br>') : "Estado: Sano";
+        textoHtmlTooltip = `<strong>Pieza ${num}</strong><br>${textoEstado}`;
 
         // Asignación de textos
         tooltip.innerHTML = textoHtmlTooltip;
