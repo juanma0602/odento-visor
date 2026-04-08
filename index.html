@@ -2,192 +2,258 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odento - Visor Clínico Sincronizado</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Odento - Visor Clínico Premium</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-body: #f1f5f9;
+            --bg-body: #0f172a;
             --bg-card: #ffffff;
             --text-main: #1e293b;
             --text-muted: #64748b;
             --sano-color: #ffffff;
-            --sano-border: #94a3b8; 
-            --resina-color: #3b82f6; 
-            --caries-color: #ef4444; 
+            --sano-border: #cbd5e1;
+            --resina-color: #2563eb; 
+            --caries-color: #dc2626; 
             --ausente-color: #334155;
-            --shadow-card: 0 20px 40px -10px rgba(0,0,0,0.08), 0 10px 15px -3px rgba(0,0,0,0.04);
-            --shadow-hover: 0 15px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
-            --tooltip-bg: rgba(15, 23, 42, 0.95);
+            --accent: #3b82f6;
+            --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --shadow-tooth: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --tooltip-bg: rgba(15, 23, 42, 0.98);
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 24px 24px;
             color: var(--text-main);
             margin: 0;
-            padding: 40px 20px;
+            padding: 20px;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
         }
 
         .card {
-            background-color: var(--bg-card);
-            border-radius: 24px;
+            background: var(--bg-card);
+            border-radius: 32px;
             box-shadow: var(--shadow-card);
             padding: 40px;
             width: 100%;
-            max-width: 950px;
-            border: 1px solid rgba(255,255,255,0.5);
+            max-width: 1000px;
             position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Pantalla de Carga */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         #loading {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9);
+            background: var(--bg-card);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--resina-color);
             z-index: 1000;
-            border-radius: 24px;
         }
 
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h2 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-        .header p { margin: 5px 0 0; color: var(--text-muted); font-size: 16px; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h2 { 
+            margin: 0; font-size: 28px; font-weight: 800; color: #0f172a;
+            background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p { margin: 8px 0 0; color: var(--text-muted); font-size: 16px; font-weight: 500; }
 
         .leyenda {
-            display: flex; justify-content: center; gap: 25px; margin-bottom: 40px;
-            font-size: 14px; font-weight: 500; padding-bottom: 25px; border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 40px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #f1f5f9;
         }
-        .leyenda-item { display: flex; align-items: center; gap: 8px; }
-        .color-box { width: 16px; height: 16px; border-radius: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .leyenda-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #475569; }
+        .color-box { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* OPTIMIZACIÓN MOBILE: Contenedor con scroll lateral para no perder tamaño de piezas */
         .odontograma-viewport {
             width: 100%;
             overflow-x: auto;
-            padding: 10px 0;
-            -webkit-overflow-scrolling: touch;
+            padding: 20px 5px;
+            cursor: grab;
+            scrollbar-width: none;
         }
+        .odontograma-viewport::-webkit-scrollbar { display: none; }
 
-        #odontograma-container {
-            min-width: 800px; /* Asegura que los dientes no se amontonen en pantallas chicas */
-            display: none;
+        #odontograma-container { min-width: 900px; }
+
+        .seccion-titulo {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #cbd5e1;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
         }
+        .seccion-titulo::before, .seccion-titulo::after { content: ""; height: 1px; width: 60px; background: #f1f5f9; }
 
-        .fila { display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; }
-        .cuadrante { display: flex; gap: 6px; }
+        .fila { display: flex; justify-content: center; gap: 40px; margin-bottom: 40px; }
+        .cuadrante { display: flex; gap: 8px; }
 
         .tooth-wrapper {
-            display: flex; flex-direction: column; align-items: center;
-            position: relative; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .tooth-wrapper:hover { transform: scale(1.15) translateY(-5px); z-index: 50; }
-        .tooth-wrapper:hover .tooth { box-shadow: var(--shadow-hover); border-color: #64748b; }
-        
-        .tooth-label { font-size: 13px; font-weight: 700; color: var(--text-muted); margin: 6px 0; transition: color 0.3s; }
-        .tooth-wrapper:hover .tooth-label { color: var(--resina-color); }
+        .tooth-wrapper:hover { transform: scale(1.25) translateY(-10px); z-index: 100; }
+
+        .tooth-label { font-size: 12px; font-weight: 800; color: var(--text-muted); margin: 8px 0; transition: color 0.3s; }
+        .tooth-wrapper:hover .tooth-label { color: var(--accent); }
 
         .tooth {
-            width: 34px; height: 34px; position: relative; background-color: var(--sano-color);
-            border: 1px solid var(--sano-border); box-sizing: border-box; transition: all 0.3s ease;
-            border-radius: 4px; overflow: hidden;
+            width: 42px;
+            height: 42px;
+            position: relative;
+            background: var(--sano-color);
+            border: 2px solid var(--sano-border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-tooth);
+            transition: border-color 0.3s;
         }
+        .tooth-wrapper:hover .tooth { border-color: var(--accent); }
 
         .surface {
-            position: absolute; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.15);
-            background-color: var(--sano-color); transition: background-color 0.3s;
+            position: absolute;
+            box-sizing: border-box;
+            border: 0.5px solid rgba(0,0,0,0.08);
+            background: var(--sano-color);
+            transition: all 0.3s ease;
         }
-        .surface.V { top: 0; left: 0; width: 100%; height: 25%; clip-path: polygon(0 0, 100% 0, 75% 100%, 25% 100%); }
-        .surface.P { bottom: 0; left: 0; width: 100%; height: 25%; clip-path: polygon(25% 0, 75% 0, 100% 100%, 0 100%); }
-        .surface.M { top: 0; left: 0; width: 25%; height: 100%; clip-path: polygon(0 0, 100% 25%, 100% 75%, 0 100%); }
-        .surface.D { top: 0; right: 0; width: 25%; height: 100%; clip-path: polygon(0 25%, 100% 0, 100% 100%, 0 75%); }
-        .surface.O { top: 25%; left: 25%; width: 50%; height: 50%; border-radius: 2px; }
 
-        .surface.resina { background-color: var(--resina-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
-        .surface.caries { background-color: var(--caries-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
-        
+        /* Geometría de las caras */
+        .surface.V { top: 0; left: 0; width: 100%; height: 26%; clip-path: polygon(0 0, 100% 0, 75% 100%, 25% 100%); }
+        .surface.P { bottom: 0; left: 0; width: 100%; height: 26%; clip-path: polygon(25% 0, 75% 0, 100% 100%, 0 100%); }
+        .surface.M { top: 0; left: 0; width: 26%; height: 100%; clip-path: polygon(0 0, 100% 25%, 100% 75%, 0 100%); }
+        .surface.D { top: 0; right: 0; width: 26%; height: 100%; clip-path: polygon(0 25%, 100% 0, 100% 100%, 0 75%); }
+        .surface.O { top: 26%; left: 26%; width: 48%; height: 48%; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
+
+        /* Estados */
+        .surface.resina { background-color: var(--resina-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
+        .surface.caries { background-color: var(--caries-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
         .tooth.ausente { background-color: var(--ausente-color); border-color: var(--ausente-color); }
-        .tooth.ausente .surface { display: none; }
         .tooth.ausente::after {
-            content: 'X'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.9); font-size: 22px; font-weight: 900;
+            content: "×"; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); color: rgba(255,255,255,0.8);
+            font-size: 32px; font-weight: 200;
         }
 
         .tooltip {
-            position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(10px);
-            background-color: var(--tooltip-bg); color: #fff; padding: 10px 14px; border-radius: 8px;
-            font-size: 13px; white-space: nowrap; visibility: hidden; opacity: 0;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; pointer-events: none;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); backdrop-filter: blur(4px);
-        }
-        .tooltip::after {
-            content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
-            border-width: 5px; border-style: solid; border-color: var(--tooltip-bg) transparent transparent transparent;
+            position: absolute; bottom: calc(100% + 15px); left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--tooltip-bg); color: #fff;
+            padding: 10px 16px; border-radius: 12px; font-size: 12px;
+            visibility: hidden; opacity: 0; transition: all 0.3s ease;
+            white-space: nowrap; z-index: 200; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(8px);
         }
         .tooth-wrapper:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
-        .tooltip-bold { font-weight: 800; display: block; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #60a5fa;}
 
-        /* AJUSTES DE ESPACIO PARA CELULARES */
-        @media (max-width: 768px) {
+        /* Ajustes Mobile */
+        @media (max-width: 600px) {
             body { padding: 10px; }
-            .card { padding: 20px 10px; border-radius: 16px; }
-            .header h2 { font-size: 20px; }
-            .header p { font-size: 14px; }
-            .leyenda { gap: 10px; font-size: 11px; flex-wrap: wrap; }
-            .fila { gap: 10px; margin-bottom: 15px; }
+            .card { padding: 25px 15px; border-radius: 24px; }
+            .header h2 { font-size: 22px; }
+            .leyenda { flex-wrap: wrap; gap: 12px; }
         }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="loading">Conectando con la base de datos...</div>
-    
+    <div id="loading">
+        <div class="spinner"></div>
+        <span>Sincronizando Ficha Clínica...</span>
+    </div>
+
     <div class="header">
-        <h2>🦷 Visor Clínico Sincronizado</h2>
-        <p>Paciente: <strong id="nombre-paciente">Cargando...</strong></p>
+        <h2>Visor Odento Premium</h2>
+        <p>Paciente: <strong id="nombre-paciente" style="color:#0f172a">...</strong></p>
     </div>
 
     <div class="leyenda">
-        <div class="leyenda-item"><div class="color-box" style="background: var(--sano-color); border: 1px solid var(--sano-border);"></div> Sano</div>
-        <div class="leyenda-item"><div class="color-box" style="background: var(--resina-color);"></div> Resina (R)</div>
-        <div class="leyenda-item"><div class="color-box" style="background: var(--caries-color);"></div> Caries (F)</div>
-        <div class="leyenda-item"><div class="color-box" style="background: var(--ausente-color);"></div> Ausente (A)</div>
+        <div class="leyenda-item"><div class="color-box" style="background: #fff;"></div> Sano</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--resina-color);"></div> Resina</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--caries-color);"></div> Caries</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--ausente-color);"></div> Ausente</div>
     </div>
 
     <div class="odontograma-viewport">
         <div id="odontograma-container">
-            <div class="fila" id="fila-1"><div class="cuadrante" id="q1"></div><div class="cuadrante" id="q2"></div></div>
-            <div class="fila" id="fila-2"><div class="cuadrante" id="q4"></div><div class="cuadrante" id="q3"></div></div>
-            <div class="fila" id="fila-3"><div class="cuadrante" id="q5"></div><div class="cuadrante" id="q6"></div></div>
-            <div class="fila" id="fila-4"><div class="cuadrante" id="q8"></div><div class="cuadrante" id="q7"></div></div>
+            <div class="seccion-titulo">Dentición Permanente</div>
+            <div class="fila">
+                <div class="cuadrante" id="q1"></div>
+                <div class="cuadrante" id="q2"></div>
+            </div>
+            <div class="fila">
+                <div class="cuadrante" id="q4"></div>
+                <div class="cuadrante" id="q3"></div>
+            </div>
+
+            <div class="seccion-titulo">Dentición Temporal</div>
+            <div class="fila">
+                <div class="cuadrante" id="q5"></div>
+                <div class="cuadrante" id="q6"></div>
+            </div>
+            <div class="fila">
+                <div class="cuadrante" id="q8"></div>
+                <div class="cuadrante" id="q7"></div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // CONFIGURACIÓN DE SUPABASE
-    const SUPABASE_URL = 'https://furnxzbrummymsdjqdpu.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_3nqqtewBPHh5LpOJxyFiww_LNhDt1S6';
+    const dbClient = supabase.createClient('https://furnxzbrummymsdjqdpu.supabase.co', 'sb_publishable_3nqqtewBPHh5LpOJxyFiww_LNhDt1S6');
     
-    const NOMBRE_TABLA = 'patients'; 
-    const COLUMNA_ID = 'dni'; 
-    const COLUMNA_JSON = 'odontograma'; 
-
-    // Usamos 'dbClient' para no chocar con el objeto global 'supabase'
-    const dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
+    // DETECTOR DE ID HÍBRIDO: URL (?id=) + Telegram Mini App (start_param)
     const urlParams = new URLSearchParams(window.location.search);
-    const pacienteId = urlParams.get('id');
+    const tgParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    const pacienteId = urlParams.get('id') || tgParam;
 
     const estructura = [
         { id: "q1", piezas: [18, 17, 16, 15, 14, 13, 12, 11], labelAbajo: false },
@@ -203,7 +269,7 @@
     function construirDiente(num, config, dbDatos) {
         const wrapper = document.createElement('div');
         wrapper.className = 'tooth-wrapper';
-
+        
         const label = document.createElement('div');
         label.className = 'tooth-label';
         label.innerText = num;
@@ -213,44 +279,32 @@
 
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
-        tooltip.innerHTML = `<span class="tooltip-bold">Pieza ${num}</span>`;
+        tooltip.innerHTML = `<strong>Pieza ${num}</strong><br>Estado: Sano`;
 
         const datos = dbDatos[num] || {};
-        const esAusente = datos.total === "A" || datos.O === "A";
-
-        if (esAusente) {
+        
+        if (datos.total === "A" || datos.O === "A" || datos.total === "X") {
             tooth.classList.add('ausente');
-            tooltip.innerHTML += 'Ausente';
+            tooltip.innerHTML = `<strong>Pieza ${num}</strong><br>Estado: Ausente / Extracción`;
         } else {
-            let info = '';
-            const caras = ['V', 'M', 'O', 'D', 'P'];
-            
-            caras.forEach(cara => {
+            let hallazgos = [];
+            ['V', 'M', 'O', 'D', 'P'].forEach(cara => {
                 const divCara = document.createElement('div');
-                const estadoBD = datos[cara]; 
+                const estado = datos[cara];
+                let clase = '';
+                if (estado === 'R' || estado === 'resina') { clase = 'resina'; hallazgos.push(`Resina ${cara}`); }
+                if (estado === 'F' || estado === 'caries') { clase = 'caries'; hallazgos.push(`Caries ${cara}`); }
                 
-                let claseCSS = '';
-                let nombreEstado = '';
-
-                if (estadoBD === 'R' || estadoBD === 'resina') { claseCSS = 'resina'; nombreEstado = 'Resina'; }
-                else if (estadoBD === 'F' || estadoBD === 'caries') { claseCSS = 'caries'; nombreEstado = 'Caries'; }
-                else if (estadoBD && estadoBD !== '.') { claseCSS = 'caries'; nombreEstado = estadoBD; }
-
-                divCara.className = `surface ${cara} ${claseCSS}`;
+                divCara.className = `surface ${cara} ${clase}`;
                 tooth.appendChild(divCara);
-                if(nombreEstado) info += `${cara}: ${nombreEstado}<br>`;
             });
-
-            tooltip.innerHTML += info ? info : '<span style="color:#94a3b8;">Sano</span>';
+            if (hallazgos.length > 0) tooltip.innerHTML = `<strong>Pieza ${num}</strong><br>${hallazgos.join(', ')}`;
         }
 
         wrapper.appendChild(tooltip);
-
         if (config.labelAbajo) {
             wrapper.appendChild(tooth);
             wrapper.appendChild(label);
-            tooltip.style.bottom = "auto";
-            tooltip.style.top = "calc(100% + 30px)";
         } else {
             wrapper.appendChild(label);
             wrapper.appendChild(tooth);
@@ -258,44 +312,46 @@
         return wrapper;
     }
 
-    async function cargarDesdeBD() {
+    async function init() {
         if (!pacienteId) {
-            document.getElementById('loading').innerHTML = "⚠️ Falta DNI en la URL.";
+            document.getElementById('loading').innerHTML = "⚠️ Error: Falta ID del paciente.";
             return;
         }
 
-        const { data, error } = await dbClient
-            .from(NOMBRE_TABLA)
-            .select('name, ' + COLUMNA_JSON)
-            .eq(COLUMNA_ID, pacienteId)
-            .single();
+        const { data, error } = await dbClient.from('patients').select('name, odontograma').eq('dni', pacienteId).single();
 
-        if (error) {
-            document.getElementById('loading').innerHTML = "⚠️ Error: " + error.message;
+        if (error || !data) {
+            document.getElementById('loading').innerHTML = "⚠️ Paciente no encontrado.";
             return;
         }
 
-        document.getElementById('nombre-paciente').innerText = data.name + " (DNI: " + pacienteId + ")";
-
-        let dbDatos = data[COLUMNA_JSON] || {};
+        document.getElementById('nombre-paciente').innerText = data.name;
+        
+        let dbDatos = data.odontograma || {};
         if (typeof dbDatos === 'string') {
             try { 
                 dbDatos = JSON.parse(dbDatos.replace(/""/g, '"').replace(/^"/, '').replace(/"$/, '')); 
-            } catch(e) { console.error("Error parseando JSON"); }
+            } catch(e) { dbDatos = {}; }
         }
 
-        estructura.forEach(cuadrante => {
-            const contenedor = document.getElementById(cuadrante.id);
-            cuadrante.piezas.forEach(num => {
-                contenedor.appendChild(construirDiente(num, cuadrante, dbDatos));
+        estructura.forEach(q => {
+            const container = document.getElementById(q.id);
+            q.piezas.forEach(num => {
+                container.appendChild(construirDiente(num, q, dbDatos));
             });
         });
 
         document.getElementById('loading').style.display = 'none';
         document.getElementById('odontograma-container').style.display = 'block';
+
+        // Configuración de la Mini App
+        if (window.Telegram?.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand(); // Abre a pantalla completa
+        }
     }
 
-    window.onload = cargarDesdeBD;
+    window.onload = init;
 </script>
 
 </body>
