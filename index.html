@@ -70,6 +70,19 @@
         .leyenda-item { display: flex; align-items: center; gap: 8px; }
         .color-box { width: 16px; height: 16px; border-radius: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
 
+        /* OPTIMIZACIÓN MOBILE: Contenedor con scroll lateral para no perder tamaño de piezas */
+        .odontograma-viewport {
+            width: 100%;
+            overflow-x: auto;
+            padding: 10px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #odontograma-container {
+            min-width: 800px; /* Asegura que los dientes no se amontonen en pantallas chicas */
+            display: none;
+        }
+
         .fila { display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; }
         .cuadrante { display: flex; gap: 6px; }
 
@@ -123,6 +136,15 @@
         .tooth-wrapper:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
         .tooltip-bold { font-weight: 800; display: block; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #60a5fa;}
 
+        /* AJUSTES DE ESPACIO PARA CELULARES */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .card { padding: 20px 10px; border-radius: 16px; }
+            .header h2 { font-size: 20px; }
+            .header p { font-size: 14px; }
+            .leyenda { gap: 10px; font-size: 11px; flex-wrap: wrap; }
+            .fila { gap: 10px; margin-bottom: 15px; }
+        }
     </style>
 </head>
 <body>
@@ -142,11 +164,13 @@
         <div class="leyenda-item"><div class="color-box" style="background: var(--ausente-color);"></div> Ausente (A)</div>
     </div>
 
-    <div id="odontograma-container" style="display: none;">
-        <div class="fila" id="fila-1"><div class="cuadrante" id="q1"></div><div class="cuadrante" id="q2"></div></div>
-        <div class="fila" id="fila-2"><div class="cuadrante" id="q4"></div><div class="cuadrante" id="q3"></div></div>
-        <div class="fila" id="fila-3"><div class="cuadrante" id="q5"></div><div class="cuadrante" id="q6"></div></div>
-        <div class="fila" id="fila-4"><div class="cuadrante" id="q8"></div><div class="cuadrante" id="q7"></div></div>
+    <div class="odontograma-viewport">
+        <div id="odontograma-container">
+            <div class="fila" id="fila-1"><div class="cuadrante" id="q1"></div><div class="cuadrante" id="q2"></div></div>
+            <div class="fila" id="fila-2"><div class="cuadrante" id="q4"></div><div class="cuadrante" id="q3"></div></div>
+            <div class="fila" id="fila-3"><div class="cuadrante" id="q5"></div><div class="cuadrante" id="q6"></div></div>
+            <div class="fila" id="fila-4"><div class="cuadrante" id="q8"></div><div class="cuadrante" id="q7"></div></div>
+        </div>
     </div>
 </div>
 
@@ -159,7 +183,7 @@
     const COLUMNA_ID = 'dni'; 
     const COLUMNA_JSON = 'odontograma'; 
 
-    // CORRECCIÓN CLAVE: Usamos 'dbClient' para no chocar con el objeto global 'supabase' de la librería
+    // Usamos 'dbClient' para no chocar con el objeto global 'supabase'
     const dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     const urlParams = new URLSearchParams(window.location.search);
@@ -240,7 +264,6 @@
             return;
         }
 
-        // Usamos dbClient (el cliente corregido) para la consulta
         const { data, error } = await dbClient
             .from(NOMBRE_TABLA)
             .select('name, ' + COLUMNA_JSON)
@@ -257,7 +280,6 @@
         let dbDatos = data[COLUMNA_JSON] || {};
         if (typeof dbDatos === 'string') {
             try { 
-                // Limpieza de formato CSV para el JSON
                 dbDatos = JSON.parse(dbDatos.replace(/""/g, '"').replace(/^"/, '').replace(/"$/, '')); 
             } catch(e) { console.error("Error parseando JSON"); }
         }
