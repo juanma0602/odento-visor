@@ -151,20 +151,17 @@
 </div>
 
 <script>
-    // ==========================================
-    // CONFIGURACIÓN DE SUPABASE (Generada automáticamente)
-    // ==========================================
+    // CONFIGURACIÓN DE SUPABASE
     const SUPABASE_URL = 'https://furnxzbrummymsdjqdpu.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_3nqqtewBPHh5LpOJxyFiww_LNhDt1S6';
     
     const NOMBRE_TABLA = 'patients'; 
     const COLUMNA_ID = 'dni'; 
     const COLUMNA_JSON = 'odontograma'; 
-    // ==========================================
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // CORRECCIÓN CLAVE: Usamos 'dbClient' para no chocar con el objeto global 'supabase' de la librería
+    const dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // Leer el DNI de la URL (Ejemplo: /?id=11132548)
     const urlParams = new URLSearchParams(window.location.search);
     const pacienteId = urlParams.get('id');
 
@@ -195,8 +192,6 @@
         tooltip.innerHTML = `<span class="tooltip-bold">Pieza ${num}</span>`;
 
         const datos = dbDatos[num] || {};
-
-        // Parseo de Ausente ("A")
         const esAusente = datos.total === "A" || datos.O === "A";
 
         if (esAusente) {
@@ -213,14 +208,12 @@
                 let claseCSS = '';
                 let nombreEstado = '';
 
-                // Si el estado es distinto de un punto ".", le asignamos el color
                 if (estadoBD === 'R' || estadoBD === 'resina') { claseCSS = 'resina'; nombreEstado = 'Resina'; }
                 else if (estadoBD === 'F' || estadoBD === 'caries') { claseCSS = 'caries'; nombreEstado = 'Caries'; }
-                else if (estadoBD && estadoBD !== '.') { claseCSS = 'caries'; nombreEstado = estadoBD; } // Fallback para IRM u otros
+                else if (estadoBD && estadoBD !== '.') { claseCSS = 'caries'; nombreEstado = estadoBD; }
 
                 divCara.className = `surface ${cara} ${claseCSS}`;
                 tooth.appendChild(divCara);
-
                 if(nombreEstado) info += `${cara}: ${nombreEstado}<br>`;
             });
 
@@ -234,10 +227,6 @@
             wrapper.appendChild(label);
             tooltip.style.bottom = "auto";
             tooltip.style.top = "calc(100% + 30px)";
-            const style = document.createElement('style');
-            style.innerHTML = `#tooth-${num}:hover .tooltip::after { top: auto; bottom: 100%; border-color: transparent transparent var(--tooltip-bg) transparent; }`;
-            document.head.appendChild(style);
-            wrapper.id = `tooth-${num}`;
         } else {
             wrapper.appendChild(label);
             wrapper.appendChild(tooth);
@@ -247,35 +236,32 @@
 
     async function cargarDesdeBD() {
         if (!pacienteId) {
-            document.getElementById('loading').innerHTML = "⚠️ Falta el DNI del paciente. <br><br> Para probar, agregá esto al final de la URL:<br><b>?id=11132548</b>";
+            document.getElementById('loading').innerHTML = "⚠️ Falta DNI en la URL.";
             return;
         }
 
-        // Llamada a Supabase usando el DNI
-        const { data, error } = await supabase
+        // Usamos dbClient (el cliente corregido) para la consulta
+        const { data, error } = await dbClient
             .from(NOMBRE_TABLA)
             .select('name, ' + COLUMNA_JSON)
             .eq(COLUMNA_ID, pacienteId)
             .single();
 
         if (error) {
-            console.error("Error BD:", error);
-            document.getElementById('loading').innerHTML = "⚠️ No se encontró el paciente con ese DNI en la base de datos.";
+            document.getElementById('loading').innerHTML = "⚠️ Error: " + error.message;
             return;
         }
 
-        // Mostrar nombre real del paciente
         document.getElementById('nombre-paciente').innerText = data.name + " (DNI: " + pacienteId + ")";
 
-        // Obtener el JSON
         let dbDatos = data[COLUMNA_JSON] || {};
-        
-        // Si el JSON viene como texto desde Supabase, lo pasamos a Objeto
         if (typeof dbDatos === 'string') {
-            try { dbDatos = JSON.parse(dbDatos); } catch(e) { console.error("Error parseando JSON"); }
+            try { 
+                // Limpieza de formato CSV para el JSON
+                dbDatos = JSON.parse(dbDatos.replace(/""/g, '"').replace(/^"/, '').replace(/"$/, '')); 
+            } catch(e) { console.error("Error parseando JSON"); }
         }
 
-        // Dibujar
         estructura.forEach(cuadrante => {
             const contenedor = document.getElementById(cuadrante.id);
             cuadrante.piezas.forEach(num => {
@@ -283,13 +269,11 @@
             });
         });
 
-        // Ocultar carga y mostrar odontograma
         document.getElementById('loading').style.display = 'none';
         document.getElementById('odontograma-container').style.display = 'block';
     }
 
-    // Iniciar
-    cargarDesdeBD();
+    window.onload = cargarDesdeBD;
 </script>
 
 </body>
