@@ -3,22 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odento - Visor Clínico Definitivo</title>
+    <title>Odento - Visor Clínico Sincronizado</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-body: #f1f5f9;
             --bg-card: #ffffff;
             --text-main: #1e293b;
             --text-muted: #64748b;
-            
-            /* Paleta Dental */
             --sano-color: #ffffff;
-            --sano-border: #94a3b8; /* Borde más suave pero definido */
-            --resina-color: #3b82f6; /* Azul brillante */
-            --caries-color: #ef4444; /* Rojo alerta */
+            --sano-border: #94a3b8; 
+            --resina-color: #3b82f6; 
+            --caries-color: #ef4444; 
             --ausente-color: #334155;
-            
-            /* Efectos Premium */
             --shadow-card: 0 20px 40px -10px rgba(0,0,0,0.08), 0 10px 15px -3px rgba(0,0,0,0.04);
             --shadow-hover: 0 15px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
             --tooltip-bg: rgba(15, 23, 42, 0.95);
@@ -44,174 +41,86 @@
             width: 100%;
             max-width: 950px;
             border: 1px solid rgba(255,255,255,0.5);
+            position: relative;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
+        /* Pantalla de Carga */
+        #loading {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--resina-color);
+            z-index: 1000;
+            border-radius: 24px;
         }
 
-        .header h2 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
-        .header p {
-            margin: 5px 0 0;
-            color: var(--text-muted);
-            font-size: 16px;
-        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+        .header p { margin: 5px 0 0; color: var(--text-muted); font-size: 16px; }
 
         .leyenda {
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            margin-bottom: 40px;
-            font-size: 14px;
-            font-weight: 500;
-            padding-bottom: 25px;
-            border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: center; gap: 25px; margin-bottom: 40px;
+            font-size: 14px; font-weight: 500; padding-bottom: 25px; border-bottom: 1px solid #e2e8f0;
         }
+        .leyenda-item { display: flex; align-items: center; gap: 8px; }
+        .color-box { width: 16px; height: 16px; border-radius: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
 
-        .leyenda-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .fila { display: flex; justify-content: center; gap: 25px; margin-bottom: 25px; }
+        .cuadrante { display: flex; gap: 6px; }
 
-        .color-box {
-            width: 16px; height: 16px; border-radius: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* Estructura de Filas */
-        .fila {
-            display: flex;
-            justify-content: center;
-            gap: 25px; /* Separador central entre cuadrantes */
-            margin-bottom: 25px;
-        }
-
-        .cuadrante {
-            display: flex;
-            gap: 6px; /* Separación entre dientes */
-        }
-
-        /* Diente Individual con Efectos */
         .tooth-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: default;
+            display: flex; flex-direction: column; align-items: center;
+            position: relative; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: default;
         }
-
-        /* EL EFECTO VISUAL QUE FALTABA */
-        .tooth-wrapper:hover {
-            transform: scale(1.15) translateY(-5px);
-            z-index: 50;
-        }
-
-        .tooth-wrapper:hover .tooth {
-            box-shadow: var(--shadow-hover);
-            border-color: #64748b;
-        }
-
-        .tooth-label {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-muted);
-            margin: 6px 0;
-            transition: color 0.3s;
-        }
+        .tooth-wrapper:hover { transform: scale(1.15) translateY(-5px); z-index: 50; }
+        .tooth-wrapper:hover .tooth { box-shadow: var(--shadow-hover); border-color: #64748b; }
         
-        .tooth-wrapper:hover .tooth-label {
-            color: var(--resina-color);
-        }
+        .tooth-label { font-size: 13px; font-weight: 700; color: var(--text-muted); margin: 6px 0; transition: color 0.3s; }
+        .tooth-wrapper:hover .tooth-label { color: var(--resina-color); }
 
-        /* Diseño Geométrico Clásico (Cuadrado con X) */
         .tooth {
-            width: 34px;
-            height: 34px;
-            position: relative;
-            background-color: var(--sano-color);
-            border: 1px solid var(--sano-border);
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-            /* Suave redondeo para que no sea filoso, pero sigue siendo cuadrado */
-            border-radius: 4px; 
-            overflow: hidden;
+            width: 34px; height: 34px; position: relative; background-color: var(--sano-color);
+            border: 1px solid var(--sano-border); box-sizing: border-box; transition: all 0.3s ease;
+            border-radius: 4px; overflow: hidden;
         }
 
         .surface {
-            position: absolute;
-            box-sizing: border-box;
-            border: 1px solid rgba(0,0,0,0.15); /* Bordes internos sutiles */
-            background-color: var(--sano-color);
-            transition: background-color 0.3s;
+            position: absolute; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.15);
+            background-color: var(--sano-color); transition: background-color 0.3s;
         }
-
         .surface.V { top: 0; left: 0; width: 100%; height: 25%; clip-path: polygon(0 0, 100% 0, 75% 100%, 25% 100%); }
         .surface.P { bottom: 0; left: 0; width: 100%; height: 25%; clip-path: polygon(25% 0, 75% 0, 100% 100%, 0 100%); }
         .surface.M { top: 0; left: 0; width: 25%; height: 100%; clip-path: polygon(0 0, 100% 25%, 100% 75%, 0 100%); }
         .surface.D { top: 0; right: 0; width: 25%; height: 100%; clip-path: polygon(0 25%, 100% 0, 100% 100%, 0 75%); }
         .surface.O { top: 25%; left: 25%; width: 50%; height: 50%; border-radius: 2px; }
 
-        /* Estados de Colores Premium */
         .surface.resina { background-color: var(--resina-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
         .surface.caries { background-color: var(--caries-color); box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
         
         .tooth.ausente { background-color: var(--ausente-color); border-color: var(--ausente-color); }
         .tooth.ausente .surface { display: none; }
         .tooth.ausente::after {
-            content: 'X';
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.9);
-            font-size: 22px;
-            font-weight: 900;
+            content: 'X'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.9); font-size: 22px; font-weight: 900;
         }
 
-        /* Tooltip de Alto Impacto */
         .tooltip {
-            position: absolute;
-            bottom: calc(100% + 10px);
-            left: 50%;
-            transform: translateX(-50%) translateY(10px);
-            background-color: var(--tooltip-bg);
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            white-space: nowrap;
-            visibility: hidden;
-            opacity: 0;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-            pointer-events: none;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
-            backdrop-filter: blur(4px);
+            position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(10px);
+            background-color: var(--tooltip-bg); color: #fff; padding: 10px 14px; border-radius: 8px;
+            font-size: 13px; white-space: nowrap; visibility: hidden; opacity: 0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; pointer-events: none;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); backdrop-filter: blur(4px);
         }
-        
-        /* Flechita del tooltip */
         .tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%; left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: var(--tooltip-bg) transparent transparent transparent;
+            content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+            border-width: 5px; border-style: solid; border-color: var(--tooltip-bg) transparent transparent transparent;
         }
-
-        .tooth-wrapper:hover .tooltip { 
-            visibility: visible; 
-            opacity: 1; 
-            transform: translateX(-50%) translateY(0);
-        }
+        .tooth-wrapper:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
         .tooltip-bold { font-weight: 800; display: block; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #60a5fa;}
 
     </style>
@@ -219,50 +128,46 @@
 <body>
 
 <div class="card">
+    <div id="loading">Conectando con la base de datos...</div>
+    
     <div class="header">
         <h2>🦷 Visor Clínico Sincronizado</h2>
-        <p>Paciente: <strong>Damian Baque</strong></p>
+        <p>Paciente: <strong id="nombre-paciente">Cargando...</strong></p>
     </div>
 
     <div class="leyenda">
         <div class="leyenda-item"><div class="color-box" style="background: var(--sano-color); border: 1px solid var(--sano-border);"></div> Sano</div>
-        <div class="leyenda-item"><div class="color-box" style="background: var(--resina-color);"></div> Resina</div>
-        <div class="leyenda-item"><div class="color-box" style="background: var(--caries-color);"></div> Caries</div>
-        <div class="leyenda-item"><div class="color-box" style="background: var(--ausente-color);"></div> Ausente</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--resina-color);"></div> Resina (R)</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--caries-color);"></div> Caries (F)</div>
+        <div class="leyenda-item"><div class="color-box" style="background: var(--ausente-color);"></div> Ausente (A)</div>
     </div>
 
-    <div class="fila" id="fila-1">
-        <div class="cuadrante" id="q1"></div>
-        <div class="cuadrante" id="q2"></div>
-    </div>
-
-    <div class="fila" id="fila-2">
-        <div class="cuadrante" id="q4"></div>
-        <div class="cuadrante" id="q3"></div>
-    </div>
-
-    <div class="fila" id="fila-3">
-        <div class="cuadrante" id="q5"></div>
-        <div class="cuadrante" id="q6"></div>
-    </div>
-
-    <div class="fila" id="fila-4">
-        <div class="cuadrante" id="q8"></div>
-        <div class="cuadrante" id="q7"></div>
+    <div id="odontograma-container" style="display: none;">
+        <div class="fila" id="fila-1"><div class="cuadrante" id="q1"></div><div class="cuadrante" id="q2"></div></div>
+        <div class="fila" id="fila-2"><div class="cuadrante" id="q4"></div><div class="cuadrante" id="q3"></div></div>
+        <div class="fila" id="fila-3"><div class="cuadrante" id="q5"></div><div class="cuadrante" id="q6"></div></div>
+        <div class="fila" id="fila-4"><div class="cuadrante" id="q8"></div><div class="cuadrante" id="q7"></div></div>
     </div>
 </div>
 
 <script>
-    // JSON simulando Supabase
-    const dbDatos = {
-        "24": { Mesial: "resina", Oclusal: "resina" },
-        "16": { Oclusal: "caries" },
-        "46": { total: "ausente" },
-        "54": { Oclusal: "resina" },
-        "74": { Distal: "caries" }
-    };
+    // ==========================================
+    // CONFIGURACIÓN DE SUPABASE (Generada automáticamente)
+    // ==========================================
+    const SUPABASE_URL = 'https://furnxzbrummymsdjqdpu.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_3nqqtewBPHh5LpOJxyFiww_LNhDt1S6';
+    
+    const NOMBRE_TABLA = 'patients'; 
+    const COLUMNA_ID = 'dni'; 
+    const COLUMNA_JSON = 'odontograma'; 
+    // ==========================================
 
-    // Estructura idéntica a tu PNG
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Leer el DNI de la URL (Ejemplo: /?id=11132548)
+    const urlParams = new URLSearchParams(window.location.search);
+    const pacienteId = urlParams.get('id');
+
     const estructura = [
         { id: "q1", piezas: [18, 17, 16, 15, 14, 13, 12, 11], labelAbajo: false },
         { id: "q2", piezas: [21, 22, 23, 24, 25, 26, 27, 28], labelAbajo: false },
@@ -274,7 +179,7 @@
         { id: "q7", piezas: [71, 72, 73, 74, 75], labelAbajo: true }
     ];
 
-    function construirDiente(num, config) {
+    function construirDiente(num, config, dbDatos) {
         const wrapper = document.createElement('div');
         wrapper.className = 'tooth-wrapper';
 
@@ -291,23 +196,32 @@
 
         const datos = dbDatos[num] || {};
 
-        if (datos.total === "ausente") {
+        // Parseo de Ausente ("A")
+        const esAusente = datos.total === "A" || datos.O === "A";
+
+        if (esAusente) {
             tooth.classList.add('ausente');
             tooltip.innerHTML += 'Ausente';
         } else {
             let info = '';
             const caras = ['V', 'M', 'O', 'D', 'P'];
-            const nombres = {V: 'Vestibular', M: 'Mesial', O: 'Oclusal', D: 'Distal', P: 'Palatino'};
             
             caras.forEach(cara => {
                 const divCara = document.createElement('div');
-                const nombreLargo = nombres[cara];
-                const estado = datos[nombreLargo];
+                const estadoBD = datos[cara]; 
                 
-                divCara.className = `surface ${cara} ${estado || ''}`;
+                let claseCSS = '';
+                let nombreEstado = '';
+
+                // Si el estado es distinto de un punto ".", le asignamos el color
+                if (estadoBD === 'R' || estadoBD === 'resina') { claseCSS = 'resina'; nombreEstado = 'Resina'; }
+                else if (estadoBD === 'F' || estadoBD === 'caries') { claseCSS = 'caries'; nombreEstado = 'Caries'; }
+                else if (estadoBD && estadoBD !== '.') { claseCSS = 'caries'; nombreEstado = estadoBD; } // Fallback para IRM u otros
+
+                divCara.className = `surface ${cara} ${claseCSS}`;
                 tooth.appendChild(divCara);
 
-                if(estado) info += `${cara}: ${estado}<br>`;
+                if(nombreEstado) info += `${cara}: ${nombreEstado}<br>`;
             });
 
             tooltip.innerHTML += info ? info : '<span style="color:#94a3b8;">Sano</span>';
@@ -318,10 +232,8 @@
         if (config.labelAbajo) {
             wrapper.appendChild(tooth);
             wrapper.appendChild(label);
-            // Invertir posición del tooltip si la etiqueta está abajo para no taparla
             tooltip.style.bottom = "auto";
             tooltip.style.top = "calc(100% + 30px)";
-            // Ajustar flechita
             const style = document.createElement('style');
             style.innerHTML = `#tooth-${num}:hover .tooltip::after { top: auto; bottom: 100%; border-color: transparent transparent var(--tooltip-bg) transparent; }`;
             document.head.appendChild(style);
@@ -330,16 +242,54 @@
             wrapper.appendChild(label);
             wrapper.appendChild(tooth);
         }
-
         return wrapper;
     }
 
-    estructura.forEach(cuadrante => {
-        const contenedor = document.getElementById(cuadrante.id);
-        cuadrante.piezas.forEach(num => {
-            contenedor.appendChild(construirDiente(num, cuadrante));
+    async function cargarDesdeBD() {
+        if (!pacienteId) {
+            document.getElementById('loading').innerHTML = "⚠️ Falta el DNI del paciente. <br><br> Para probar, agregá esto al final de la URL:<br><b>?id=11132548</b>";
+            return;
+        }
+
+        // Llamada a Supabase usando el DNI
+        const { data, error } = await supabase
+            .from(NOMBRE_TABLA)
+            .select('name, ' + COLUMNA_JSON)
+            .eq(COLUMNA_ID, pacienteId)
+            .single();
+
+        if (error) {
+            console.error("Error BD:", error);
+            document.getElementById('loading').innerHTML = "⚠️ No se encontró el paciente con ese DNI en la base de datos.";
+            return;
+        }
+
+        // Mostrar nombre real del paciente
+        document.getElementById('nombre-paciente').innerText = data.name + " (DNI: " + pacienteId + ")";
+
+        // Obtener el JSON
+        let dbDatos = data[COLUMNA_JSON] || {};
+        
+        // Si el JSON viene como texto desde Supabase, lo pasamos a Objeto
+        if (typeof dbDatos === 'string') {
+            try { dbDatos = JSON.parse(dbDatos); } catch(e) { console.error("Error parseando JSON"); }
+        }
+
+        // Dibujar
+        estructura.forEach(cuadrante => {
+            const contenedor = document.getElementById(cuadrante.id);
+            cuadrante.piezas.forEach(num => {
+                contenedor.appendChild(construirDiente(num, cuadrante, dbDatos));
+            });
         });
-    });
+
+        // Ocultar carga y mostrar odontograma
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('odontograma-container').style.display = 'block';
+    }
+
+    // Iniciar
+    cargarDesdeBD();
 </script>
 
 </body>
